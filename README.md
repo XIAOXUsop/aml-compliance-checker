@@ -73,8 +73,19 @@ String card = "4539********1486";
 
 ## 使用
 
-IDEA 中：`Settings → Plugins → ⚙ → Install Plugin from Disk`，选择构建产物 zip；
-警报在编辑器中就地出现，`Alt+Enter` 选择「替换为脱敏值」即可。
+**方式一：直接下载安装包**（推荐，无需构建）
+
+1. 下载 [aml-compliance-checker-0.3.0.zip](https://github.com/XIAOXUsop/aml-compliance-checker/releases/latest/download/aml-compliance-checker-0.3.0.zip)
+2. IDEA 中 `Settings → Plugins → ⚙ → Install Plugin from Disk`，选择该 zip
+3. 重启 IDE
+
+**方式二：从源码构建**
+
+```bash
+./gradlew buildPlugin     # 产物在 build/distributions/
+```
+
+装好后：警报在编辑器中就地出现，`Alt+Enter` 选择「替换为脱敏值」即可。
 
 ## 开发
 
