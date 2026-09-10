@@ -4,12 +4,16 @@
     <name>AML Data Compliance Checker</name>
     <vendor>XIAOXUsop</vendor>
     <description><![CDATA[
-        <p><b>AML 数据合规检查器</b> — 在 Java 注释中检测疑似敏感数据明文（身份证号、手机号），就地报警提示替换为脱敏 mock 数据。</p>
+        <p><b>AML 数据合规检查器</b> — 在 Java 注释与字符串字面量中检测疑似敏感数据明文
+        （身份证号、银行卡号、手机号、邮箱），就地报警并支持一键替换为脱敏值。</p>
         <p>源自商业银行反洗钱尽调平台（amlagent）的工程实践，防止真实客户样例数据流入代码仓库。</p>
         <ul>
-            <li>18 位身份证（生日段校验，过滤流水号误报）</li>
-            <li>11 位手机号</li>
-            <li>报警文案只显示掩码预览，不回显完整数据</li>
+            <li>身份证号：格式 + 18 位校验位双重验证，过滤流水号误报</li>
+            <li>银行卡号：16~19 位 + Luhn 校验</li>
+            <li>手机号 / 邮箱（可在设置中开关）</li>
+            <li>覆盖注释与字符串字面量，一处不漏</li>
+            <li>QuickFix 一键替换为等长脱敏值</li>
+            <li>报警文案只显示短预览，不回显完整数据</li>
         </ul>
     ]]></description>
 
@@ -18,12 +22,11 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <localInspection
-            groupPath="Java"
-            groupBundle="messages.InspectionsBundle"
-            groupKey="group.names.probable.bugs"
+            shortName="AmlSensitiveData"
+            displayName="AML 敏感数据检查"
+            groupName="AML 合规"
             enabledByDefault="true"
             level="WARNING"
-            implementationClass="com.xiaoxu.aml.checker.inspection.SensitiveDataCommentInspection"
-            key="display.name"/>
+            implementationClass="com.xiaoxu.aml.checker.inspection.SensitiveDataInspection"/>
     </extensions>
 </idea-plugin>

@@ -1,24 +1,30 @@
-// AML 合规检查器测试样例
-// 正面样例 1：注释中含身份证
-public class Sample1 {
+// AML 合规检查器 —— 人工验证样例（runIde 沙箱中打开本文件观察告警与 QuickFix）
+//
+// 期望：标注 [命中] 的行出现告警且可 Alt+Enter 一键脱敏；标注 [通过] 的行无告警。
+
+public class SensitiveCommentTestData {
+
+    // [命中] 注释中的身份证号（校验位合法）
     // 客户张三，身份证 110101199003078531，北京户口
-    void sample() {}
-}
 
-// 正面样例 2：注释含手机号
-class Sample2 {
+    // [命中] 注释中的手机号
     // 客服回访电话 13812345678
-    void contact() {}
-}
 
-// 负面样例：普通注释无敏感数据
-class Clean {
+    // [命中] 字符串字面量中的银行卡号（Luhn 合法）
+    static final String BANK_CARD_SAMPLE = "4539578763621486";
+
+    // [命中] 字符串字面量中的身份证号
+    static final String ID_CARD_SAMPLE = "110101199003078531";
+
+    // [通过] 普通注释，无敏感数据
     // 该方法处理交易数据
-    void ok() {}
-}
 
-// 负面样例：流水号不应误报（非身份证格式，无合法生日段）
-class FalsePositiveCheck {
+    // [通过] 20 位流水号：长度与非 Luhn 均不符，不误报
     // 订单流水号 88888888888888888888
-    void order() {}
+
+    // [通过] 校验位错误的身份证：仅格式像，校验位不合法
+    // 客户李四，身份证 110101199003078532
+
+    void sample() {
+    }
 }
