@@ -1,0 +1,29 @@
+<!-- AML Compliance Checker - IntelliJ Inspection Plugin -->
+<idea-plugin>
+    <id>com.xiaoxu.aml.checker</id>
+    <name>AML Data Compliance Checker</name>
+    <vendor>XIAOXUsop</vendor>
+    <description><![CDATA[
+        <p><b>AML 数据合规检查器</b> — 在 Java 注释中检测疑似敏感数据明文（身份证号、手机号），就地报警提示替换为脱敏 mock 数据。</p>
+        <p>源自商业银行反洗钱尽调平台（amlagent）的工程实践，防止真实客户样例数据流入代码仓库。</p>
+        <ul>
+            <li>18 位身份证（生日段校验，过滤流水号误报）</li>
+            <li>11 位手机号</li>
+            <li>报警文案只显示掩码预览，不回显完整数据</li>
+        </ul>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <localInspection
+            groupPath="Java"
+            groupBundle="messages.InspectionsBundle"
+            groupKey="group.names.probable.bugs"
+            enabledByDefault="true"
+            level="WARNING"
+            implementationClass="com.xiaoxu.aml.checker.inspection.SensitiveDataCommentInspection"
+            key="display.name"/>
+    </extensions>
+</idea-plugin>
