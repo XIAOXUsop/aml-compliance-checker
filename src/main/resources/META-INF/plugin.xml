@@ -3,15 +3,15 @@
     <id>com.xiaoxu.aml.checker</id>
     <name>AML Data Compliance Checker</name>
     <vendor>XIAOXUsop</vendor>
-    <description><![CDATA[AML Data Compliance Checker — 在 Java 注释与字符串字面量中检测疑似敏感数据明文（身份证号、银行卡号、手机号、邮箱），就地报警并支持一键替换为等长脱敏值。
+    <description><![CDATA[AML Data Compliance Checker is an IntelliJ IDEA inspection plugin that detects plaintext sensitive data (ID card number, bank card number, phone number, email) in Java comments and string literals, reports problems in place, and offers a one-click QuickFix that replaces the value with an equal-length masked one.
 
-<p>源自商业银行反洗钱尽调平台（amlagent）的工程实践，防止真实客户样例数据随代码提交流入仓库。</p>
+<p>面向 Java 代码的敏感数据合规检查器：在注释与字符串字面量中检出疑似明文，就地报警并支持一键替换为等长脱敏值。源自商业银行反洗钱尽调平台（amlagent）的工程实践，防止真实客户样例数据随代码提交流入仓库。</p>
 
 <b>检测能力</b>
 <ul>
     <li>身份证号：格式 + 18 位校验位（ISO 7064 MOD 11-2）双重验证，流水号不误报</li>
     <li>银行卡号：16~19 位 + Luhn 校验</li>
-    <li>手机号 / 邮箱（可在 Settings → Inspections 中逐项开关）</li>
+    <li>手机号 / 邮箱（可在 Settings - Inspections 中逐项开关）</li>
     <li>覆盖注释与字符串字面量</li>
     <li>QuickFix 一键替换为等长脱敏值，如 110101********8531</li>
     <li>报警文案只显示短预览，连报警本身也不泄露完整数据</li>
