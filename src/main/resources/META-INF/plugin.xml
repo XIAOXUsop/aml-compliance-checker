@@ -3,19 +3,19 @@
     <id>com.xiaoxu.aml.checker</id>
     <name>AML Data Compliance Checker</name>
     <vendor>XIAOXUsop</vendor>
-    <description><![CDATA[
-        <p><b>AML 数据合规检查器</b> — 在 Java 注释与字符串字面量中检测疑似敏感数据明文
-        （身份证号、银行卡号、手机号、邮箱），就地报警并支持一键替换为脱敏值。</p>
-        <p>源自商业银行反洗钱尽调平台（amlagent）的工程实践，防止真实客户样例数据流入代码仓库。</p>
-        <ul>
-            <li>身份证号：格式 + 18 位校验位双重验证，过滤流水号误报</li>
-            <li>银行卡号：16~19 位 + Luhn 校验</li>
-            <li>手机号 / 邮箱（可在设置中开关）</li>
-            <li>覆盖注释与字符串字面量，一处不漏</li>
-            <li>QuickFix 一键替换为等长脱敏值</li>
-            <li>报警文案只显示短预览，不回显完整数据</li>
-        </ul>
-    ]]></description>
+    <description><![CDATA[AML Data Compliance Checker — 在 Java 注释与字符串字面量中检测疑似敏感数据明文（身份证号、银行卡号、手机号、邮箱），就地报警并支持一键替换为等长脱敏值。
+
+<p>源自商业银行反洗钱尽调平台（amlagent）的工程实践，防止真实客户样例数据随代码提交流入仓库。</p>
+
+<b>检测能力</b>
+<ul>
+    <li>身份证号：格式 + 18 位校验位（ISO 7064 MOD 11-2）双重验证，流水号不误报</li>
+    <li>银行卡号：16~19 位 + Luhn 校验</li>
+    <li>手机号 / 邮箱（可在 Settings → Inspections 中逐项开关）</li>
+    <li>覆盖注释与字符串字面量</li>
+    <li>QuickFix 一键替换为等长脱敏值，如 110101********8531</li>
+    <li>报警文案只显示短预览，连报警本身也不泄露完整数据</li>
+</ul>]]></description>
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
