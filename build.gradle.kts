@@ -29,6 +29,12 @@ dependencies {
 }
 
 tasks {
+    // 把 LICENSE 打进插件 jar。Gradle 与 Maven 都一样：默认不带许可文本，
+    // 于是分发的产物里没有它的许可条件。IntelliJ 的 composedJar 从 jar 派生，会一并带上。
+    jar {
+        from("LICENSE") { into("META-INF") }
+    }
+
     test {
         useJUnitPlatform()
         jvmArgs("-Xmx2g")

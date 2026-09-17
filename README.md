@@ -92,7 +92,7 @@ String card = "4539********1486";
 
 **方式一：直接下载安装包**（推荐，无需构建）
 
-1. 下载 [aml-compliance-checker-0.4.0.zip](https://github.com/XIAOXUsop/aml-compliance-checker/releases/latest/download/aml-compliance-checker-0.4.0.zip)
+1. 下载 [aml-compliance-checker-0.4.1.zip](https://github.com/XIAOXUsop/aml-compliance-checker/releases/latest/download/aml-compliance-checker-0.4.1.zip)
 2. IDEA 中 `Settings → Plugins → ⚙ → Install Plugin from Disk`，选择该 zip
 3. 重启 IDE
 

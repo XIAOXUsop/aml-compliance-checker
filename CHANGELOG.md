@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-09-18
+
+### Fixed
+
+- 插件包内**没有 LICENSE**。Gradle 默认不会把仓库根的 LICENSE 放进 jar，
+  于是分发的产物不带它自己的许可条件。现在通过 `jar { from("LICENSE") { into("META-INF") } }`
+  打进 `META-INF/LICENSE`（IntelliJ 的 composedJar 从 jar 派生，会一并带上）。
+
 ## [0.4.0] - 2026-09-18
 
 ### Fixed
