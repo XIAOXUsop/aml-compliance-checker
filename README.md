@@ -9,7 +9,7 @@
 金融代码中，开发常把真实客户样例数据写进注释或字面量，这类数据一旦提交仓库就难以追溯清除。
 本插件把"数据入库前脱敏"理念前移到"写代码时提醒"，并给出可一键执行的修复。
 
-## 功能（v0.3）
+## 功能
 
 ### 双信号判定：不只看值长什么样，还看它"叫什么名字"
 
@@ -46,11 +46,28 @@ String idCard = "110101199003078532";
 | 手机号 | 11 位，`1[3-9]` 开头 | 开 |
 | 邮箱 | 常见域名后缀形态 | 关（误报较多） |
 
-- ✅ **覆盖注释与字符串字面量**，一处不漏
+- ✅ **扫描 Java PSI 中的注释与字符串字面量**（`PsiComment` 与 `PsiLiteralValue`）
 - ✅ **QuickFix 一键脱敏**：`110101199003078531` → `110101********8531`
 - ✅ **校验位/Luhn 双重验证**，订单流水号、随机长数字不会误报
 - ✅ **逐项开关**：Settings → Inspections → AML 合规
 - ✅ 报警文案只显示短预览（如 `110****531`），连报警本身也不泄露完整数据
+
+### 扫描边界（不覆盖什么）
+
+上面那条"扫描 Java PSI 中的注释与字符串字面量"说的是**当前实现真正扫描的 PSI 节点**。
+下列输入不在扫描范围内，请不要把它当作全量数据泄漏防护：
+
+| 不在范围内 | 为什么 |
+|---|---|
+| 动态拼接 | `"客户" + id + "的卡号是" + card` 每段都是独立的字面量，拼出来的完整值从来不存在于任何一个节点里 |
+| 外部资源文件 | 只解析 Java PSI，不读 `.properties` / `.yaml` / `.json` / `.csv` / SQL 脚本 |
+| 运行时数据 | 插件是静态检查，看不到数据库读出、接口传入、日志打印的内容 |
+| 非 Java 语言 | Kotlin / Groovy / XML / 前端代码都不在扫描范围内 |
+| 标识符本身 | 只扫注释与字面量；`String idCard;` 这样的声明本身不会被报警 |
+
+标识符语义信号是**启发式**而非语义分析：它从字面量所在节点向上最多走两层找最近的
+具名祖先，拿那个名字做关键词匹配。名字里带 `phone` 的变量会被当成手机号语境看待，
+名字起得不像的就不会触发——这是刻意的取舍，因为把判断放宽到"任何形似数字"会让插件被淹没在误报里。
 
 ### 效果示意
 
@@ -75,7 +92,7 @@ String card = "4539********1486";
 
 **方式一：直接下载安装包**（推荐，无需构建）
 
-1. 下载 [aml-compliance-checker-0.3.0.zip](https://github.com/XIAOXUsop/aml-compliance-checker/releases/latest/download/aml-compliance-checker-0.3.0.zip)
+1. 下载 [aml-compliance-checker-0.4.0.zip](https://github.com/XIAOXUsop/aml-compliance-checker/releases/latest/download/aml-compliance-checker-0.4.0.zip)
 2. IDEA 中 `Settings → Plugins → ⚙ → Install Plugin from Disk`，选择该 zip
 3. 重启 IDE
 
@@ -94,10 +111,17 @@ String card = "4539********1486";
 需要 JDK 21。
 
 ```bash
-./gradlew test              # 运行识别/脱敏逻辑测试（离线）
-./gradlew runIde            # 沙箱运行 IDE，实测告警与 QuickFix
+./gradlew test              # 54 项测试（纯逻辑 + 真实 IntelliJ fixture），离线
+./gradlew runIde            # 沙箱运行 IDE，人工看告警与 QuickFix
 ./gradlew buildPlugin       # 打包 build/distributions/*.zip
 ```
+
+测试分两层，覆盖的是两类完全不同的东西：
+
+| 层 | 覆盖什么 | 为什么不能只留一层 |
+|---|---|---|
+| 纯逻辑（`SensitivePatternsTest` / `SemanticSignalTest`） | 正则、校验位、Luhn、脱敏串 | 快、无沙箱；但测不到"命中之后编辑器里发生了什么" |
+| IntelliJ fixture（`SensitiveDataInspectionFixtureTest` / `DesensitizeQuickFixTest` / `InspectionSettingsTest` / `InspectionRegistrationTest`） | 加载真实 Java 文件走完整 PSI 与 inspection 流程、区间、光标处的 QuickFix、设置的存取往返、`plugin.xml` 注册 | 后者才是用户在 IDE 里看到的行为 |
 
 > **注意（Windows 中文路径）**：若项目位于含中文的路径下，Gradle 的测试 classpath 会因
 > `@argfile` 编码不一致而 `ClassNotFoundException`。解决办法是让守护进程编码与系统一致：
@@ -106,11 +130,14 @@ String card = "4539********1486";
 
 ## 技术
 
-- IntelliJ Platform SDK：`LocalInspectionTool` + PSI（`PsiComment` / `PsiLiteralValue`）+ `OptPane` 设置项
+- IntelliJ Platform SDK：`LocalInspectionTool` + PSI + `OptPane` 设置项
 - Kotlin，Gradle Kotlin DSL
 - QuickFix 通过 `WriteCommandAction` 改写文档，保持 PSI 一致
 - 识别与脱敏逻辑抽成纯 Kotlin 对象（`SensitivePatterns`），无需 IDE 沙箱即可单测
+- fixture 测试用 `LightJavaCodeInsightFixtureTestCase`，需要 `TestFrameworkType.Plugin.Java`
+  与 `bundledPlugin("com.intellij.java")`；JUnit 3 形态的基类在 `useJUnitPlatform()` 下
+  还需要 `junit-vintage-engine`，三者缺一测试都不会被发现（不是失败，是**不执行**）
 
 ## License
 
-MIT
+[Apache-2.0](LICENSE)

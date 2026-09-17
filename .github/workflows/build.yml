@@ -1,14 +1,10 @@
-# GitHub Actions workflow for building, testing, verifying, and preparing plugin release drafts:
-# - Build the plugin ZIP with the 'buildPlugin' task and upload it as a workflow artifact.
-# - Run the 'check' task and upload test reports on failure.
-# - Run the 'verifyPlugin' task and upload Plugin Verifier reports.
-# - Create a draft GitHub release on non-pull-request runs.
+# 构建、测试、验证，并为发布准备一个 draft release。
+# - buildPlugin 打包插件 ZIP 并作为 workflow artifact 上传
+# - check 跑测试，失败时上传测试报告
+# - verifyPlugin 跑 IntelliJ Plugin Verifier，上传验证报告
+# - 非 PR 事件下创建一个 draft release（供人工确认后发布）
 #
-# The workflow is triggered on pushes to the 'main' branch and on pull_request events.
-#
-# GitHub Actions reference: https://docs.github.com/actions
-#
-## JBIJPPTPL
+# GitHub Actions 参考：https://docs.github.com/actions
 
 name: Build
 on:

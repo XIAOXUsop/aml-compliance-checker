@@ -51,13 +51,23 @@ class SensitiveDataInspection : LocalInspectionTool() {
 
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor =
         object : PsiElementVisitor() {
-            override fun visitComment(comment: PsiComment) {
-                // 注释里没有标识符上下文，只用值形态信号
-                scan(holder, comment, comment.text, hint = null)
-            }
-
+            /**
+             * 注释与字符串字面量都在这里处理，**不重写 visitComment**。
+             *
+             * <p>原因是 Javadoc 的分发路径与普通注释不同：`PsiCommentImpl.accept()`
+             * 会调用 `visitComment()`，而 `PsiDocCommentImpl.accept()` 走的是
+             * `visitElement()`。只重写 `visitComment` 会让成对星号开头的文档注释
+             * 整类漏掉——而示例数据恰恰最常写在那种注释里。
+             *
+             * <p>反过来，如果两者都重写，普通注释会被扫两遍、同一处报两条重复告警。
+             * 只走 `visitElement` 刚好覆盖全部三种注释：`visitComment()` 的默认实现
+             * 本来就是转调 `visitElement()`。
+             */
             override fun visitElement(element: PsiElement) {
-                if (element is PsiLiteralValue && element.value is String) {
+                if (element is PsiComment) {
+                    // 注释里没有标识符上下文，只用值形态信号
+                    scan(holder, element, element.text, hint = null)
+                } else if (element is PsiLiteralValue && element.value is String) {
                     // 用字面量原文（含引号）扫描，保证命中区间与 PSI 文本偏移一致；
                     // 同时取外层标识符名作为语义信号
                     scan(holder, element, element.text, identifierHint(element))

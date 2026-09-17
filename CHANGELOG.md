@@ -4,6 +4,37 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-18
+
+### Fixed
+
+- **Javadoc 注释完全没被扫描。** `PsiDocCommentImpl.accept()` 的分发路径与普通注释不同：
+  它调用 `visitElement()` 而不是 `visitComment()`。原先只重写 `visitComment`，
+  于是所有 `/** … */` 形式的注释整类漏掉——而示例数据恰恰最常写在 Javadoc 里，
+  这个漏报会一直静默存在。现在统一在 `visitElement` 里处理注释与字面量，
+  三种注释形态（行 / 块 / Javadoc）都覆盖，且不会重复报警。
+- README 的 License 写成了 MIT，而仓库里是 Apache-2.0。
+
+### Added
+
+- **真实 IntelliJ fixture 测试（21 项，测试总数 28 → 54）**：
+  - Inspection 高亮：加载真实 Java 文件走完整 PSI 流程；断言告警**区间**只覆盖敏感值
+    （不含引号、不含整行）、Javadoc / 行注释 / 块注释三种形态、转义字符串下偏移不漂移；
+  - QuickFix：等长替换、一行多个命中时每个修复只动自己那一处、转义符与其他文本一字不改、
+    修复后 PSI 与 Document 已提交、替换后同一处不再报警；
+  - 设置存取往返：选项键名、默认值、`writeSettings`/`readSettings` 往返稳定——
+    防止升级后把用户明确关掉的规则又打开；
+  - 注册检查：`plugin.xml` 的 `localInspection` 注册、默认开关、级别与 shortName。
+- README 增加「扫描边界」一节，明确写出不覆盖的输入（动态拼接、外部资源文件、
+  运行时数据、非 Java 语言），并把标识符语义信号说明为启发式而非语义分析。
+
+### Changed
+
+- 删除模板残留：`template-cleanup.yml`、`template-verify.yml`、`.github/template-cleanup/`、
+  与插件无关的 rename 模板 testData；`dependabot.yml` 原先指向不存在的 `next` 分支。
+- `release.yml` 不再调用 `publishPlugin`——它需要四个本仓库没有的 secrets，
+  保留只会让每次发布以必然失败的 job 结束。插件 ZIP 仍会挂到 GitHub Release 上。
+
 ## [0.3.0] - 2026-09-10
 
 ### Added
