@@ -87,3 +87,10 @@
 
 - 首个版本：在 Java 注释中检测 18 位身份证号与 11 位手机号
 - 报警文案仅显示掩码预览，不回显完整敏感数据
+
+[Unreleased]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.4.1...HEAD
+[0.4.1]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.4.0...0.4.1
+[0.4.0]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.3.0...0.4.0
+[0.3.0]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.2.0...0.3.0
+[0.2.0]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.1.0...0.2.0
+[0.1.0]: https://github.com/XIAOXUsop/aml-compliance-checker/commits/0.1.0
