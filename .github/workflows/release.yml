@@ -85,6 +85,18 @@ jobs:
           ./gradlew patchChangelog --release-note-file=$RELEASE_NOTE
 
       # Create a pull request
+      #
+      # 这一步把上面 patchChangelog 的结果提成一个 PR，需要仓库设置里开启
+      # 「Allow GitHub Actions to create and approve pull requests」——**默认是关的**，
+      # 于是 `gh pr create` 以 `GitHub Actions is not permitted to create or approve
+      # pull requests` 失败（实测 v0.4.2：分支推上去了，PR 建不出来）。
+      #
+      # 这里刻意不让它失败：那个开关同时允许 Actions **批准** PR，为一个自动更新
+      # CHANGELOG 的便利功能去放宽它划不来。分支照推、PR 留给人手动建，并在日志里
+      # 明确说出来——而不是让每次发布都以一个红色 job 结束。
+      #
+      # 要让它真正自动建 PR：仓库 Settings → Actions → General → Workflow permissions
+      # 勾上那一项，再把下面的 `|| echo` 去掉。
       - name: Create Pull Request
         if: ${{ github.event.release.body != '' }}
         env:
@@ -98,8 +110,19 @@ jobs:
           git config user.name "GitHub Action"
 
           git checkout -b $BRANCH
+
+          # 无变化时 `git commit` 会以非零退出，而脚本是 `bash -e`：先看一眼
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "::notice::CHANGELOG 已经是这个版本的内容，无需提 PR"
+            exit 0
+          fi
           git commit -am "Changelog update - $VERSION"
-          git push --set-upstream origin $BRANCH
+
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
+            git push --force origin "$BRANCH"
+          else
+            git push --set-upstream origin "$BRANCH"
+          fi
 
           gh label create "$LABEL" \
             --description "Pull requests with release changelog update" \
@@ -110,4 +133,5 @@ jobs:
             --title "Changelog update - \`$VERSION\`" \
             --body "Current pull request contains patched \`CHANGELOG.md\` file for the \`$VERSION\` version." \
             --label "$LABEL" \
-            --head $BRANCH
+            --head $BRANCH \
+            || echo "::warning::分支 $BRANCH 已推送，但自动建 PR 需要仓库开启 'Allow GitHub Actions to create and approve pull requests'（Settings → Actions → General）。请手动建 PR，或开启该设置后重跑本工作流。"
