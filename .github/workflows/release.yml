@@ -84,16 +84,38 @@ jobs:
         run: gh release upload --clobber ${{ github.event.release.tag_name }} ./build/distributions/*
 
       # Update the Unreleased section with the current release note
+      #
+      # ⚠️ `-Pversion` 不能省，理由与上面 Build plugin 那一步**完全相同**。
+      # 这个任务是按 `project.version` 决定往 CHANGELOG 里写哪个版本段的，
+      # 而不传它时 `project.version` 取的是 `gradle.properties` 里那个值
+      # （v0.4.1 起就没再动过）。实测于 2026-09-19：
+      #
+      #   ./gradlew patchChangelog --release-note-file=…            → 不生成任何新段
+      #   ./gradlew patchChangelog --release-note-file=… -Pversion=9.9.9
+      #                                                            → 生成 `## [9.9.9] - …`
+      #
+      # 前者正是线上发生的事：任务以 0 退出、日志里 `BUILD SUCCESSFUL`，
+      # 而 CHANGELOG 一个字节都没改——于是「无变化」分支把它记成「无需提 PR」，
+      # 这个 job 从此绿着通过，而 CHANGELOG 再也不会被发布流程更新。
+      # 这与上面那个「三个版本的产物都叫 0.4.1」是同一个根因：**版本号必须来自 tag**。
+      #
+      # 另有一条实测出来的行为，写在这里免得有人踩：
+      # `--release-note-file` 是**取代**而不是合并新段的正文。同一份 [Unreleased] 内容：
+      #   带 --release-note-file → 新段的正文是那个文件的内容，[Unreleased] 下的条目被丢弃
+      #   不带                   → [Unreleased] 的条目被搬进新段
+      # 也就是说**手写在 [Unreleased] 下的条目不会因发布而进 CHANGELOG**，
+      # 本仓库的发布说明以 GitHub Release 正文为准。
       - name: Patch Changelog
         if: ${{ github.event.release.body != '' }}
         env:
           CHANGELOG: ${{ github.event.release.body }}
+          TAG: ${{ github.event.release.tag_name }}
         run: |
           RELEASE_NOTE="./build/tmp/release_note.txt"
           mkdir -p "$(dirname "$RELEASE_NOTE")"
           echo "$CHANGELOG" > $RELEASE_NOTE
 
-          ./gradlew patchChangelog --release-note-file=$RELEASE_NOTE
+          ./gradlew patchChangelog --release-note-file=$RELEASE_NOTE -Pversion="${TAG#v}"
 
       # Create a pull request
       #
