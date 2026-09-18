@@ -1,0 +1,29 @@
+# 换行符统一为 LF。
+#
+# 为什么需要显式写：Windows 上 core.autocrlf 默认会把检出换成 CRLF，
+# 于是同一份源码在不同机器上得到不同的字节。
+#
+# 对本项目尤其要紧的是 `gradlew`：它是 shell 脚本，CRLF 会让 Linux 上的
+# 第一行变成 `#!/bin/sh\r`，执行时报 `bad interpreter: No such file or directory`。
+# 这个仓库已经因为**另一个文件属性问题**在 CI 上挂过一次——
+# `gradlew` 缺少可执行位，以 exit code 126 失败（记在 CHANGELOG 0.2.0 的 Fixed 一节）。
+# 两者是同一类：文件属性让「本机好好的」在 CI 上直接失败，而且报错指向别处。
+* text=auto eol=lf
+
+# 构建入口必须逐字节是 LF，理由见上
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+*.sh text eol=lf
+
+# CHANGELOG 会被 changelog 插件读出再写回，行尾不稳会让 diff 变成整文件重写
+CHANGELOG.md text eol=lf
+
+# 二进制不做行尾转换
+*.jar binary
+*.zip binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text eol=lf
