@@ -57,10 +57,20 @@ jobs:
         run: ls -la ./build/distributions/
 
       # Upload the plugin ZIP as a release asset
+      #
+      # `--clobber` 是必需的，不是保险：这个工作流在每次 release 事件上重跑，
+      # 而 `gh release upload` 默认**不覆盖**同名 asset——第二次运行会直接
+      # `asset under the same name already exists` 并以 1 退出。
+      #
+      # 实测（2026-09-17，v0.4.1）：Release 是手动建的、asset 也是手动附的，
+      # 于是这次工作流跑起来必然失败。产物本身是好的，但 CI 上多了一次红色，
+      # 而且这个工作流从此**再也无法重跑**——想用它重新构建产物都做不到。
+      #
+      # 覆盖是这里正确的语义：产物应当以**从该 tag 源码构建出来的那一份**为准。
       - name: Upload Release Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ github.event.release.tag_name }} ./build/distributions/*
+        run: gh release upload --clobber ${{ github.event.release.tag_name }} ./build/distributions/*
 
       # Update the Unreleased section with the current release note
       - name: Patch Changelog
