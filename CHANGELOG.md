@@ -4,6 +4,52 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **产物的版本号没跟 tag 走——v0.4.4 的压缩包在 IDEA 里显示成 0.4.1。**
+  `release.yml` 里 `./gradlew buildPlugin` 没传版本，于是 `project.version` 取的是
+  `gradle.properties` 里那个从 0.4.1 起就没再动过的值。发布流程现在传
+  `-Pversion="${TAG#v}"`（实测：`-Pversion=9.9.9` → `aml-compliance-checker-9.9.9.zip`，
+  包内 jar 同名），所以**从这个版本起版本号才真正等于 tag**。
+
+  已经发布出去的 v0.4.4 不受此修正影响：它的**代码**是 v0.4.4 的（工作流按 tag 检出），
+  但压缩包名与插件元数据里的 `<version>` 都是 0.4.1——装了它的人在插件列表里看到的是
+  0.4.1，**无法据此确认自己装的是哪一版**。需要那一版的人请以 tag 为准，不要以插件列表为准。
+
+  与它同根因的还有一处：`patchChangelog` 也没传 `-Pversion`，导致本文件从 0.4.1 起
+  再没被发布流程更新过（任务以 0 退出、日志 `BUILD SUCCESSFUL`，而文件一个字节没变）。
+  本文件里 0.4.2 起的段落是事后按各版本 Release 说明补录的。
+
+## [0.4.4] - 2026-09-18
+
+### Fixed
+
+- **v0.4.3 那次对 `release.yml` 的修改没有进 tag**（提交时只 `git add` 了单文件，
+  改动一直留在工作区），于是 v0.4.3 跑的还是没有加固的版本。本次补上。
+- 失败原因也确认了：`nothing to commit, working tree clean`——CHANGELOG 经 v0.4.2
+  那次之后没有被改动，所以「有变化才提 PR」的分支把它判成无需提交。
+
+> 本版只改发布工作流，插件功能与 v0.4.3 一致。
+
+## [0.4.3] - 2026-09-18
+
+### Fixed
+
+- 插件元数据的 `<vendor>` 补上主页链接。IntelliJ 的 schema 要求它带 url 或 email，
+  只写名字会在 Marketplace 校验时被提出来——本机 `verifyPlugin` 不因此失败，
+  属于**要到上架那天才暴露的缺失**。
+- 发布工作流此前**从来没有成功过**：先是 `gh release upload` 默认不覆盖同名 asset，
+  而工作流在每次 release 事件上重跑，撞上已存在的 asset 就以 1 退出（加 `--clobber`）。
+
+## [0.4.2] - 2026-09-18
+
+### Added
+
+- 插件包内附带 LICENSE（Apache-2.0）。
+
+> 功能与 v0.4.1 一致。**本版只改了一件事**：发布工作流此前从来没成功过，
+> 产物本身是好的，但 CI 上多一次红色，而且这个工作流再也无法重跑。现在加 `--clobber`。
+
 ## [0.4.1] - 2026-09-18
 
 ### Fixed
