@@ -49,9 +49,20 @@ jobs:
         with:
           cache-read-only: true
 
-      # 打出来的 ZIP 名称必须与 README 的下载链接一致，否则链接会 404
+      # 版本号必须来自 tag。
+      #
+      # `gradle.properties` 里那份从 v0.4.1 起就没再动过（`version = 0.4.1`），
+      # 于是 v0.4.2 / v0.4.3 / v0.4.4 构建出来的产物**全叫
+      # `aml-compliance-checker-0.4.1.zip`**，插件内部的 `<version>` 也是 0.4.1
+      # ——装了 v0.4.4 的人在 IDEA 里看到的是 0.4.1，而 Release 页面上挂着的
+      # asset 名与 tag 对不上。实测于 2026-09-18。
+      #
+      # `-Pversion` 能同时驱动产物名与 plugin.xml 的 `<version>`（已本地验证），
+      # 所以这里以 tag 为准，开发者本地构建仍用 gradle.properties 的值。
       - name: Build plugin
-        run: ./gradlew buildPlugin
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: ./gradlew buildPlugin -Pversion="${TAG#v}"
 
       - name: Show the artifact that will be uploaded
         run: ls -la ./build/distributions/
