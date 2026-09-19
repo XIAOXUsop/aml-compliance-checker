@@ -67,6 +67,52 @@ jobs:
       - name: Show the artifact that will be uploaded
         run: ls -la ./build/distributions/
 
+      # 断言落在**产物本身**上，而不是落在构建命令上。
+      #
+      # 上面的 `-Pversion` 传对了，不代表产物里的版本号就对——v0.4.4 正是这么发出去的：
+      # 命令没错、构建成功、`Show the artifact` 也照常打印，而 zip 名、包内 jar 名、
+      # plugin.xml 的 `<version>` 三者全是 0.4.1。**没有任何一步会因为这件事变红。**
+      # 使用者装进 IDEA 才看到版本对不上，而那时已经发布出去了。
+      #
+      # 所以这里把三者逐个与 tag 比一遍。多比几个地方不是啰嗦：这三处是三个不同的
+      # 代码路径写的（zip 名与 jar 名由产物配置决定，`<version>` 由 plugin.xml 决定），
+      # v0.4.4 那次三者**同时**错了，说明它们共用一个来源——但没道理假定以后也一起对。
+      - name: 断言产物里的版本号等于 tag
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          want="${TAG#v}"
+          zip=$(ls build/distributions/*.zip | head -1)
+          echo "产物: $zip   期望版本: $want"
+
+          fail=0
+          got_zip=$(basename "$zip" .zip)
+          got_zip="${got_zip##*-}"
+          [ "$got_zip" = "$want" ] || {
+            echo "::error::zip 名里的版本是 $got_zip，tag 是 $want"; fail=1; }
+
+          tmp=$(mktemp -d)
+          unzip -q -o "$zip" -d "$tmp"
+          jar=$(find "$tmp" -name '*.jar' | head -1)
+          inner=$(basename "$jar" .jar)
+          got_jar="${inner##*-}"
+          [ "$got_jar" = "$want" ] || {
+            echo "::error::包内 jar 名里的版本是 $got_jar，tag 是 $want"; fail=1; }
+
+          # `<version>` 是唯一会被 IDEA 读走、显示在插件列表里的那个
+          got_xml=$(unzip -p "$jar" META-INF/plugin.xml \
+            | tr -d '\r' | grep -o '<version>[^<]*' | head -1 | cut -d'>' -f2)
+          [ "$got_xml" = "$want" ] || {
+            echo "::error::plugin.xml 的 <version> 是 $got_xml，tag 是 $want"; fail=1; }
+
+          rm -rf "$tmp"
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::产物版本与 tag 不一致，拒绝上传——这正是 v0.4.4 那次事故"
+            exit 1
+          fi
+          echo "zip 名 / jar 名 / plugin.xml 三处都等于 $want"
+
       # Upload the plugin ZIP as a release asset
       #
       # `--clobber` 是必需的，不是保险：这个工作流在每次 release 事件上重跑，

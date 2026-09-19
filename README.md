@@ -94,10 +94,33 @@ String card = "4539********1486";
 
 1. 在 [Releases 页面](https://github.com/XIAOXUsop/aml-compliance-checker/releases/latest)下载最新的
    `aml-compliance-checker-<版本>.zip`
-   （文件名带版本号，与 tag 一致；这里不写死版本，免得每次发版都要回来改，
-   改晚了就是一个 404 的下载链接）
+   （**从下一个版本起**文件名才真正与 tag 一致；当前最新版不是，见下面的 ⚠️。
+   这里不写死版本号，免得每次发版都要回来改，改晚了就是一个 404 的下载链接）
 2. IDEA 中 `Settings → Plugins → ⚙ → Install Plugin from Disk`，选择该 zip
 3. 重启 IDE
+
+> ⚠️ **当前最新版（v0.4.4）的产物名与 tag 对不上，插件里的版本号也不对。**
+> 2026-09-19 从 Release 下载核对，v0.4.4 的 asset 展开是这样的：
+>
+> ```
+> aml-compliance-checker-0.4.1.zip
+> └── aml-compliance-checker/lib/aml-compliance-checker-0.4.1.jar
+>     └── META-INF/plugin.xml →  <version>0.4.1</version>
+> ```
+>
+> **代码是 v0.4.4 的**（发布工作流按 tag 检出源码），只是版本号没跟 tag 走：
+> `buildPlugin` 当时没传 `-Pversion`，`project.version` 取的是 `gradle.properties`
+> 里那个从 0.4.1 起就没再动过的值。于是 v0.4.2 / v0.4.3 / v0.4.4 三版的产物
+> **全叫 `...-0.4.1.zip`，而字节数各不相同**（v0.4.1 是 31574、
+> v0.4.2 是 31562、v0.4.3 与 v0.4.4 都是 31680）——它们是四次不同的构建，
+> 却顶着同一个名字。也就是说，下载到一个 `0.4.1.zip` 你**无法从名字判断它是哪一版**，
+> 而装在 IDEA 里看到的 0.4.1 也不是它的真实版本。
+>
+> 修复已在 master，**从下一个版本起**产物名与插件 `<version>` 才真正等于 tag
+> （实测：`-Pversion=9.9.9` → `aml-compliance-checker-9.9.9.zip`，包内 jar 同名）。
+> 在那之前，**以 tag 为准，不要以插件列表里的版本号为准**；
+> 要确认手里那个包是哪一版，只能看它是从哪个 Release 下载的。
+> 详细记录见 `CHANGELOG.md` 的 `[Unreleased]` 段。
 
 **方式二：从源码构建**
 
