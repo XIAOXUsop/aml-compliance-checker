@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-    testImplementation("org.junit.jupiter:junit-jupiter:5.13.4")
+    testImplementation("org.junit.jupiter:junit-jupiter:6.1.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     // fixture 测试的基类（BasePlatformTestCase / LightJavaCodeInsightFixtureTestCase）
     // 继承自 junit.framework.TestCase，必须编译期可见，不能只放在 runtimeOnly
