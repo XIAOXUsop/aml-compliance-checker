@@ -83,7 +83,28 @@ jobs:
         run: |
           set -euo pipefail
           want="${TAG#v}"
-          zip=$(ls build/distributions/*.zip | head -1)
+
+          # ⚠️ 不能写 `ls build/distributions/*.zip | head -1`。
+          #
+          # 那样在**只有一个 zip** 时是对的，也正是 CI 里的情形——但本地构建目录里
+          # 攒着历史产物时，它会按字典序挑中**最快的那一个**：2026-09-20 在本机试，
+          # `build/distributions/` 下同时有 0.4.1、0.4.5、9.9.9 三个 zip，
+          # `head -1` 拿到的是 **0.4.1**，于是断言在验一个**根本不是这次构建**的文件。
+          # 那次是"验错了对象"，不是"验出了错"——后者会红，前者会绿。
+          #
+          # 所以：多于一个就直接失败，让人看清楚该清哪个目录，而不是猜。
+          mapfile -t zips < <(ls build/distributions/*.zip 2>/dev/null || true)
+          if [ "${#zips[@]}" -eq 0 ]; then
+            echo "::error::build/distributions/ 下没有 zip——buildPlugin 没产出东西"
+            exit 1
+          fi
+          if [ "${#zips[@]}" -ne 1 ]; then
+            printf '::error::build/distributions/ 下有 %d 个 zip，无法确定该验哪一个：\n' "${#zips[@]}"
+            printf '  %s\n' "${zips[@]}"
+            echo "::error::先清掉 build/distributions/ 再构建——断言必须打在本次构建的产物上"
+            exit 1
+          fi
+          zip="${zips[0]}"
           echo "产物: $zip   期望版本: $want"
 
           fail=0
