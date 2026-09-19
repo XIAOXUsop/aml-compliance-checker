@@ -1,15 +1,70 @@
-# Dependabot configuration:
+# Dependabot 配置：
 # https://docs.github.com/en/free-pro-team@latest/github/administering-a-repository/configuration-options-for-dependency-updates
+#
+# ── 为什么把模板给的 `daily` 改成 `weekly` ────────────────────────────
+#
+# 这份文件原样来自 JetBrains 的 intellij-platform-plugin-template，`interval: daily`
+# 是**模板的默认值，不是谁选出来的**。实测代价：2026-09-17 起的**两天**里，
+# gradle 那一条就堆了 5 个 PR（正好顶到默认上限 5），每一个都无人分诊——
+# 它们每天重新算一遍、重新跑一次 CI，而结论不会变。
+#
+# `weekly` 与同族的 amlagent 一致（那份也逐条写明了处置结论）。
+# 上限显式写出来：不写就是默认 5，而"默认值"和"我们选的 5"在评审时是两回事。
 
 version: 2
 updates:
-  # Maintain dependencies for Gradle dependencies
+  # Gradle 依赖
+  #
+  # ── 当前这 5 个 PR 的分诊（2026-09-19 逐条查过）────────────────────
+  #
+  # 每条都写明**依据是什么**、以及**为什么没有直接合**。写在这里是因为
+  # 分诊时打开的就是这个文件。
+  #
+  #   #7  org.jetbrains.intellij.platform.settings  2.16.0 → 2.19.0
+  #       版本确认存在（Gradle 插件门户上该家族共 43 个版本，2.19.0 是最新的）。
+  #       **这是一次动作、不是两次**：`build.gradle.kts` 里的
+  #       `org.jetbrains.intellij.platform` 不带版本号，由这个 settings 插件统一带出来，
+  #       两者本来就同进同出。它决定 IDE 目标版本，所以合之前要看 `verifyPlugin`
+  #       的结论，不能只看单元测试。
+  #
+  #   #6  org.jetbrains.kotlin.jvm  2.1.20 → 2.4.20
+  #       `kotlin-gradle-plugin:2.4.20` 确认是正式版（不是 RC）。这是**工具链**升级：
+  #       实测已发布的 v0.4.4 插件包里**只有插件自己的那一个 jar**，里面
+  #       **没有** kotlin 运行时类（仅一个 `META-INF/*.kotlin_module` 标记文件），
+  #       所以它不改变发布物的构成，不必按「依赖安全」那一类对待。
+  #
+  #   #1  org.junit.jupiter:junit-jupiter        5.13.4 → 6.1.3
+  #   #3  org.junit.vintage:junit-vintage-engine 5.13.4 → 6.1.3
+  #       两个版本都确认存在（Central 上 6.1.3 是各自 6.x 线的最后一个）。
+  #       这是**大版本**，而本仓库的测试里有一批继承自 `junit.framework.TestCase`
+  #       ——`junit:junit:4.13.2` + vintage engine 就是为它们留的——
+  #       所以必须真跑一遍才能下结论，不能只看版本号。两个要一起动。
+  #
+  #   #2  gradle-wrapper  9.5.0 → 9.7.1
+  #       与 maven-wrapper 那类同性质：换的是构建工具本身。本仓库的发布流程依赖
+  #       `./gradlew buildPlugin -Pversion=…`（见 release.yml），所以升它要顺带确认
+  #       发布流程仍然成立，而不是只看 `build` 绿没绿。
+  #
+  # 结论：这 5 个**没有**「必须马上合」的理由，也**没有**「永远不该合」的理由。
+  # 它们会一直占着配额直到有人决定——这与 amlagent 那份的处置一致。
+  # 不写 `ignore`：那会把它们变成一道「得有人记得拆掉」的墙，而没有人会记得。
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
-      interval: "daily"
-  # Maintain dependencies for GitHub Actions
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # GitHub Actions
+  #
+  #   #5  actions/checkout    6 → 7
+  #   #4  actions/setup-java  5 → 6
+  #       逐个大版本查过各自的 `action.yml`：`using:` 两边都是 **node24**
+  #       ——也就是说这两个升级既不改变运行时、也不带来安全修复，纯粹是版本号往上走。
+  #       本仓库已经跑 `upload-artifact@v7`（比它自己的 `checkout@v6` 还新），
+  #       所以「保持保守」这条理由在本仓库并不成立；但反过来也没有必须升的理由。
+  #       要升就两个一起升，别只升一个。
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    open-pull-requests-limit: 5
