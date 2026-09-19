@@ -14,7 +14,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     // fixture 测试是 JUnit 3 形态（BasePlatformTestCase 继承 TestCase），
     // 在 useJUnitPlatform() 下必须由 vintage 引擎来发现与执行
-    testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.13.4")
+    testRuntimeOnly("org.junit.vintage:junit-vintage-engine:6.1.3")
 
     intellijPlatform {
         intellijIdeaCommunity("2025.2.6.2")
