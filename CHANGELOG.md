@@ -26,13 +26,6 @@
   现在多于一个就直接失败并列出全部，让人先清目录——**验错对象比验出错更危险，
   后者会红，前者会绿**。
 
-### 关于 v0.4.4
-
-它的**代码**是 v0.4.4 的（工作流按 tag 检出），但压缩包名与插件元数据里的
-`<version>` 都是 0.4.1——装了它的人在插件列表里看到的是 0.4.1，**无法据此确认
-自己装的是哪一版**。需要那一版的人请以 tag 为准，不要以插件列表为准。
-v0.4.4 的 Release **不删除、不覆盖**，只在说明里指向本版本。
-
 ## [0.4.4] - 2026-09-18
 
 ### Fixed
@@ -41,8 +34,6 @@ v0.4.4 的 Release **不删除、不覆盖**，只在说明里指向本版本。
   改动一直留在工作区），于是 v0.4.3 跑的还是没有加固的版本。本次补上。
 - 失败原因也确认了：`nothing to commit, working tree clean`——CHANGELOG 经 v0.4.2
   那次之后没有被改动，所以「有变化才提 PR」的分支把它判成无需提交。
-
-> 本版只改发布工作流，插件功能与 v0.4.3 一致。
 
 ## [0.4.3] - 2026-09-18
 
@@ -59,9 +50,6 @@ v0.4.4 的 Release **不删除、不覆盖**，只在说明里指向本版本。
 ### Added
 
 - 插件包内附带 LICENSE（Apache-2.0）。
-
-> 功能与 v0.4.1 一致。**本版只改了一件事**：发布工作流此前从来没成功过，
-> 产物本身是好的，但 CI 上多一次红色，而且这个工作流再也无法重跑。现在加 `--clobber`。
 
 ## [0.4.1] - 2026-09-18
 
@@ -147,7 +135,11 @@ v0.4.4 的 Release **不删除、不覆盖**，只在说明里指向本版本。
 - 首个版本：在 Java 注释中检测 18 位身份证号与 11 位手机号
 - 报警文案仅显示掩码预览，不回显完整敏感数据
 
-[Unreleased]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.4.1...HEAD
+[Unreleased]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.4.5...HEAD
+[0.4.5]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.4.4...0.4.5
+[0.4.4]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.4.3...0.4.4
+[0.4.3]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.4.2...0.4.3
+[0.4.2]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.4.1...0.4.2
 [0.4.1]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.2.0...0.3.0
