@@ -183,6 +183,15 @@ jobs:
             | xargs -r -I '{}' gh api -X DELETE repos/{owner}/{repo}/releases/{}
 
       # Create a new release draft which is not publicly visible and requires manual acceptance
+      #
+      # ⚠️ **草稿的发布说明来自 CHANGELOG 的 `[Unreleased]` 段**（`getChangelog --unreleased`）。
+      # 2026-09-20 发 0.4.5 时就踩了这个：为了把版本号写进标题，我把内容从
+      # `[Unreleased]` 整段挪进了新的 `## [0.4.5]`——结果这步**跑成功、任务绿**，
+      # 而草稿的正文是**空的**（`getChangelog` 找不到 Unreleased 段，不报错、返回空）。
+      # 我当时是手动 PATCH 补回去的。
+      #
+      # 约定：**发版前把条目留在 `[Unreleased]` 下**，让发布流程去提升它；
+      # 不要提前改成 `## [x.y.z]`。
       - name: Create Release Draft
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
