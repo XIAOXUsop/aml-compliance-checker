@@ -39,12 +39,12 @@ class SensitivePatternsTest {
 
     @Test
     fun bankCardLuhnValidAccepted() {
-        assertTrue(SensitivePatterns.isValidLuhn("4539578763621486"))
+        assertTrue(SensitivePatterns.isValidBankCardNumber("4539578763621486"))
     }
 
     @Test
     fun bankCardLuhnInvalidRejected() {
-        assertFalse(SensitivePatterns.isValidLuhn("4539578763621487"))
+        assertFalse(SensitivePatterns.isValidBankCardNumber("4539578763621487"))
     }
 
     @Test
@@ -77,8 +77,19 @@ class SensitivePatternsTest {
     @Test
     fun orderNumberNotReported() {
         // 20 位纯数字流水号：既非合法身份证（校验位/长度不符），也非 Luhn 合法卡号
+        // 20 位纯数字流水号。**它其实满足标准 Luhn**（实测 sum%10==0）——
+        // 拦住它的是长度窗口 16~19，不是校验位。
+        // 所以这条钉的是"长度闸门在起作用"：把窗口放宽到 20 位，它就会被报出来，
+        // 那是预期的（放宽窗口本来就该多报），不是 bug。
         val hits = SensitivePatterns.detect("// 订单流水号 88888888888888888888", allKinds)
         assertTrue(hits.isEmpty(), "流水号不应误报，实际命中：$hits")
+
+        // 与一条**16 位**的 Luhn 合法卡号对照：同样的校验位算法，长度在窗口内就报、
+        // 超出窗口就不报——这两条一起才说明"是长度在挡"，而不是"校验位没过"。
+        assertFalse(
+            SensitivePatterns.detect("// 备用卡号 4539578763621486", allKinds).isEmpty(),
+            "16 位 Luhn 合法卡号应当被报出（对照组）",
+        )
     }
 
     @Test

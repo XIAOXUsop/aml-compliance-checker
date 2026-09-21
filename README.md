@@ -60,10 +60,25 @@ String idCard = "110101199003078532";
 | 不在范围内 | 为什么 |
 |---|---|
 | 动态拼接 | `"客户" + id + "的卡号是" + card` 每段都是独立的字面量，拼出来的完整值从来不存在于任何一个节点里 |
-| 外部资源文件 | 只解析 Java PSI，不读 `.properties` / `.yaml` / `.json` / `.csv` / SQL 脚本 |
+| 内容不是 PSI 注释/字面量的文件 | `.properties` / `.json` / `.csv` / SQL 脚本实测**不报**——它们的内容既不是 `PsiComment` 也不是 `PsiLiteralValue` |
 | 运行时数据 | 插件是静态检查，看不到数据库读出、接口传入、日志打印的内容 |
-| 非 Java 语言 | Kotlin / Groovy / XML / 前端代码都不在扫描范围内 |
 | 标识符本身 | 只扫注释与字面量；`String idCard;` 这样的声明本身不会被报警 |
+
+> **「非 Java 语言都不在范围内」这句原先写错了**（原文把 Kotlin / Groovy / XML 一并列了进去）。
+> `plugin.xml` 里那条 `<localInspection>` **没有 `language` 属性**，inspection 因此对所有语言生效；
+> 而 XML 的 `XmlComment` 实现了 `PsiComment`、`XmlAttributeValue` 实现了 `PsiLiteralValue`，
+> 两者都会进访问器。**实测**（一份 MyBatis mapper）：
+>
+> ```
+> AML 合规：疑似身份证号（110************531）   覆盖='110101199003078531'   ← XML 注释
+> AML 合规：疑似银行卡号（453**********486）    覆盖='4539578763621486'     ← XML 属性值
+> ```
+>
+> SQL 文本节点里的手机号**不**命中（它不是注释也不是字面量）。Kotlin / Groovy / YAML 同理——
+> 只要对应语言的 PSI 里有注释或字面量节点就会被扫，**而这取决于装了哪些语言插件**。
+>
+> **这不算缺陷**：扫 MyBatis mapper 与 `pom.xml` 里的真实数据，正是这个插件想干的事。
+> 错的是文档说它不扫。行为现在由 `testXmlCommentsAndAttributeValuesAreScanned` 钉住。
 
 标识符语义信号是**启发式**而非语义分析：它从字面量所在节点向上最多走两层找最近的
 具名祖先，拿那个名字做关键词匹配。名字里带 `phone` 的变量会被当成手机号语境看待，
@@ -84,9 +99,17 @@ String card = "4539********1486";
 ## 为什么这些数字不会误报
 
 ```
-订单流水号 88888888888888888888   → 20 位，既非合法身份证长度，也不满足 Luhn
+订单流水号 88888888888888888888   → 20 位，超出银行卡号的长度窗口 16~19
 110101199003078532                → 格式像身份证，但校验位错误
 ```
+
+> **上一行原写的是「既不满足 Luhn」，那是错的。** 实测 `88888888888888888888`
+> 的 Luhn 和为 0——它**满足**标准 Luhn，拦住它的只有长度。
+> 这条理由写错是有代价的：照它去"修"校验位，或者以为"放宽长度也没关系，
+> 反正校验位会挡"，都会让流水号开始误报。
+>
+> 顺带把校验函数的名字也改对了：它原先叫 `isValidLuhn`，实际却把长度窗口
+> 一起折在里面（`isValidBankCardNumber`）。**名字只说一半，是这类错误理由的温床。**
 
 ## 使用
 
@@ -136,7 +159,7 @@ String card = "4539********1486";
 需要 JDK 21。
 
 ```bash
-./gradlew test              # 54 项测试（纯逻辑 + 真实 IntelliJ fixture），离线
+./gradlew test              # 55 项测试（纯逻辑 + 真实 IntelliJ fixture），离线
 ./gradlew runIde            # 沙箱运行 IDE，人工看告警与 QuickFix
 ./gradlew buildPlugin       # 打包 build/distributions/*.zip
 ```

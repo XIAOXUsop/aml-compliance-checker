@@ -116,7 +116,7 @@ object SensitivePatterns {
         // 第一轮：值形态自证
         collect(text, enabled, SensitiveKind.ID_CARD, ID_CARD, ::isValidIdCard,
             "符合 18 位身份证格式且校验位有效", Confidence.HIGH, findings, consumed)
-        collect(text, enabled, SensitiveKind.BANK_CARD, BANK_CARD, ::isValidLuhn,
+        collect(text, enabled, SensitiveKind.BANK_CARD, BANK_CARD, ::isValidBankCardNumber,
             "符合 16~19 位卡号格式且通过 Luhn 校验", Confidence.HIGH, findings, consumed)
         collect(text, enabled, SensitiveKind.PHONE, PHONE, { true },
             "符合 11 位手机号格式", Confidence.HIGH, findings, consumed)
@@ -184,8 +184,16 @@ object SensitivePatterns {
         return ID_CHECK_CHARS[sum % 11].equals(raw[17], ignoreCase = true)
     }
 
-    /** 银行卡号 Luhn 校验 */
-    fun isValidLuhn(raw: String): Boolean {
+    /**
+     * 银行卡号校验：**长度窗口 + Luhn**，两件事都在里面。
+     *
+     * 名字原先叫 `isValidLuhn`，而它其实还带一个 `length in 16..19` 的闸门——
+     * 名字只说了一半，于是文档和测试里都写成「订单流水号不满足 Luhn」。
+     * **那是错的**：`88888888888888888888`（20 位）实测 `sum % 10 == 0`，
+     * 它是**满足**标准 Luhn 的，拦住它的只有长度。
+     * 名字与行为不符会把后来的人引到错的方向去（比如去"修"校验位）。
+     */
+    fun isValidBankCardNumber(raw: String): Boolean {
         if (raw.length !in 16..19) return false
         var sum = 0
         var doubled = false

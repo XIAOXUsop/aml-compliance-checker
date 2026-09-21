@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 客户身份证 110101199003078531 -->
+<mapper namespace="demo">
+    <select id="find">
+        select * from t where phone = '13812345678'
+    </select>
+    <param name="card" value="4539578763621486"/>
+</mapper>

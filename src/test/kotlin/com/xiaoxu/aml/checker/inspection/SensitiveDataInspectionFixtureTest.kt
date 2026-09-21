@@ -39,6 +39,31 @@ class SensitiveDataInspectionFixtureTest : LightJavaCodeInsightFixtureTestCase()
         return myFixture.doHighlighting().filter { it.description?.contains("AML 合规") == true }
     }
 
+    /**
+     * **XML 文件也会被扫**——这条把既有行为钉住，因为文档曾把它写反。
+     *
+     * <p>README 的「扫描边界」表原先写着「非 Java 语言：Kotlin / Groovy / **XML** /
+     * 前端代码都不在扫描范围内」。实测不是这样：`plugin.xml` 里那条
+     * `<localInspection>` **没有 `language` 属性**，于是 inspection 对所有语言生效，
+     * 而 `XmlComment` 实现了 `PsiComment`、`XmlAttributeValue` 实现了 `PsiLiteralValue`，
+     * 两者都会进 `visitElement`。
+     *
+     * <p>实测（本用例的数据）：一份 MyBatis mapper 里，
+     * **注释里的身份证**与**属性值里的银行卡号**各命中 1 条；
+     * SQL 文本节点里的手机号**不**命中（它不是注释也不是字面量）。
+     *
+     * <p>这算不算 bug？**不算**——扫描 MyBatis mapper 与 `pom.xml` 里的真实数据正是
+     * 这个插件想干的事。错的是文档说它不扫。所以这里修的是文档，并把行为钉住，
+     * 免得两边再次漂开。
+     */
+    fun testXmlCommentsAndAttributeValuesAreScanned() {
+        val hits = findings("probe.xml")
+        assertEquals("XML 里应当命中 2 处（注释里的身份证、属性值里的卡号）", 2, hits.size)
+        val covered = hits.map { coveredText(it) }.toSet()
+        assertTrue("注释里的身份证号应当被覆盖，实际：$covered", "110101199003078531" in covered)
+        assertTrue("属性值里的银行卡号应当被覆盖，实际：$covered", "4539578763621486" in covered)
+    }
+
     /** 一条告警实际覆盖的原文——用它来核对区间，比行号精确 */
     private fun coveredText(info: HighlightInfo): String =
         myFixture.file.text.substring(info.startOffset, info.endOffset)
