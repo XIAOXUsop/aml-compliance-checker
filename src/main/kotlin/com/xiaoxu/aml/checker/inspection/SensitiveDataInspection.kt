@@ -12,8 +12,11 @@ import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiElementVisitor
+import com.intellij.psi.PsiExpressionList
 import com.intellij.psi.PsiLiteralValue
+import com.intellij.psi.PsiMethodCallExpression
 import com.intellij.psi.PsiNamedElement
+import com.intellij.psi.PsiReferenceExpression
 
 /**
  * AML 敏感数据检查：在 **注释与字符串字面量** 中识别疑似敏感数据明文。
@@ -103,23 +106,57 @@ class SensitiveDataInspection : LocalInspectionTool() {
     }
 
     /**
-     * 向上最多两层取最近的**具名祖先**作为语义提示。
+     * 向上最多三层取最近的语义提示：具名祖先 → 方法调用的方法名 → Map 字面量的键名。
      *
-     * <p>只用核心 PSP 的 [PsiNamedElement]（不引入 Java 插件依赖），因此无法精确区分
-     * "变量/字段/键名"与"方法名"。这是可接受的：方法名同样携带语义
-     * （`setIdCard(...)` 的参数本就该被当作身份证看待），而深度上限保证不会一路爬到类名。
+     * <p>只用核心 PSI（不引入 Java 插件依赖）。
+     *
+     * <p>── 为什么不能只找 [PsiNamedElement] ────────────────────────────
+     *
+     * <p>这里原先只有第一条，注释里写着「方法名同样携带语义（`setIdCard(...)` 的参数
+     * 本就该被当作身份证看待）」——**那句话描述的正是唯一不成立的场景**。
+     * `PsiMethodCallExpression` 不是 `PsiNamedElement`，所以方法调用的实参
+     * **永远拿不到提示**，而它们恰恰是测试与 mock 数据的标准形态：
+     * `assertEquals("110101199003078532", …)`、`buildDto("4539578763621487")`、
+     * `Map.of("cardNo", "4539578763621487")`。
+     * 实测（2026-09-22，真实 Java PSI）：`setIdCard("110101199003078532")` 与
+     * `Map.of("cardNo", "4539578763621487")` 的命中的都是**空**，
+     * 而同样内容的局部变量赋值能正常命中。
      */
     private fun identifierHint(element: PsiElement): String? {
         var current: PsiElement? = element.parent
         var depth = 0
-        while (current != null && depth < 2) {
+        while (current != null && depth < 3) {
             if (current is PsiNamedElement) {
                 current.name?.let { if (it.isNotBlank()) return it }
+            }
+            if (current is PsiMethodCallExpression) {
+                val name = (current.methodExpression as? PsiReferenceExpression)?.referenceName
+                if (!name.isNullOrBlank()) return name
+            }
+            if (current is PsiExpressionList) {
+                keyOf(element, current)?.let { return it }
             }
             current = current.parent
             depth++
         }
         return null
+    }
+
+    /**
+     * 成对实参（`Map.of(k, v)` / `put(k, v)`）里，取本元素前面那个**字符串字面量**键。
+     *
+     * <p>只在"偶数位是键、奇数位是值"时才取，因此 `assertEquals(expected, actual)`
+     * 这类不会误取——`expected` 通常不是字符串字面量；`assertEquals("idCard", "1101…")`
+     * 取到的键恰好也是有用的语义。
+     */
+    private fun keyOf(element: PsiElement, list: PsiExpressionList): String? {
+        val expressions = list.expressions
+        val index = expressions.indexOfFirst { it.textRange.contains(element.textRange) }
+        if (index <= 0 || index % 2 == 0) {
+            return null
+        }
+        val key = (expressions[index - 1] as? PsiLiteralValue)?.value as? String
+        return key?.takeIf { it.isNotBlank() }
     }
 
     private fun enabledKinds(): Set<SensitiveKind> = buildSet {

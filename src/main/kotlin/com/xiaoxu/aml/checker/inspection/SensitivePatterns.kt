@@ -235,6 +235,15 @@ object SensitivePatterns {
     private fun maskEmail(raw: String): String {
         val at = raw.indexOf('@')
         if (at <= 0) return "*".repeat(raw.length)
-        return raw.first() + "*".repeat(at - 1) + raw.substring(at)
+        // 单字符 local part（`x@example.com`）要连那个字符一起掩。
+        //
+        // 这里原先一律是 `raw.first() + "*".repeat(at - 1)`，而 `at == 1` 时
+        // `"*".repeat(0)` 是空串——输出与输入**逐字相同**。
+        // 后果不是"掩得不够"，是"掩了个寂寞"：告警报了、`Alt+Enter → 替换为脱敏值`
+        // 点了、插件说修复了，而文件一个字节都没变，告警原样留着。
+        // 实测（2026-09-22，真实 fixture + QuickFix 的 launchAction 路径）：
+        // `x@example.com` 修完之后 text changed = false、告警仍在。
+        val head = if (at == 1) "*" else raw.first() + "*".repeat(at - 1)
+        return head + raw.substring(at)
     }
 }

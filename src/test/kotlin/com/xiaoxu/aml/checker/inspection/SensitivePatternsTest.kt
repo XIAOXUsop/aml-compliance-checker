@@ -2,6 +2,7 @@ package com.xiaoxu.aml.checker.inspection
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -155,5 +156,44 @@ class SensitivePatternsTest {
 
         assertEquals("138*****678", preview)
         assertFalse(preview.contains("12345678"))
+    }
+
+    /**
+     * **掩码不许把原文原样还回来。**
+     *
+     * <p>听起来是废话，但它确实发生过：`maskEmail` 写的是
+     * `raw.first() + "*".repeat(at - 1) + raw.substring(at)`，
+     * 而单字符 local part（`x@example.com`）时 `"*".repeat(0)` 是空串——
+     * 输出与输入**逐字相同**。
+     *
+     * <p>后果不是"掩得不够"，是**掩了个寂寞**：告警报了、`Alt+Enter → 替换为脱敏值`
+     * 点了、插件报告"已修复"，而文件一个字节都没变、告警原样留着。
+     * 实测（2026-09-22，真实 fixture 走 QuickFix 的 launchAction 路径）：
+     * 修完之后 `text changed = false`，而告警还在。
+     *
+     * <p>这条不变式对所有类型、所有形态都成立——只要检出的是敏感值，
+     * `mask()` 就不该把原文还回来。
+     */
+    @Test
+    fun maskingNeverReturnsTheInputUnchanged() {
+        val samples = mapOf(
+            SensitiveKind.ID_CARD to listOf("110101199003078531", "110101900307853"),
+            SensitiveKind.BANK_CARD to listOf("6222020200112347", "622202020011234612"),
+            SensitiveKind.PHONE to listOf("13812345678", "1381234567"),
+            SensitiveKind.EMAIL to listOf("zhangsan@example.com", "x@example.com", "a@b.com"),
+        )
+        for ((kind, raws) in samples) {
+            for (raw in raws) {
+                assertNotEquals(raw, SensitivePatterns.mask(kind, raw),
+                    "$kind 的「$raw」掩码之后与原文一字不差，等于没掩")
+            }
+        }
+    }
+
+    @Test
+    fun singleCharacterLocalPartEmailIsMaskedAndKeepsLength() {
+        // 长度保持不变：QuickFix 是原地替换，长度变了会让后续偏移错位
+        assertEquals("*@example.com", SensitivePatterns.mask(SensitiveKind.EMAIL, "x@example.com"))
+        assertEquals("*@b.com", SensitivePatterns.mask(SensitiveKind.EMAIL, "a@b.com"))
     }
 }

@@ -64,6 +64,32 @@ class SensitiveDataInspectionFixtureTest : LightJavaCodeInsightFixtureTestCase()
         assertTrue("属性值里的银行卡号应当被覆盖，实际：$covered", "4539578763621486" in covered)
     }
 
+    /**
+     * **方法调用的实参与 Map 字面量的值，也要能拿到语义提示。**
+     *
+     * <p>`identifierHint` 原先只向上找两层内的 `PsiNamedElement`，并带一句注释说
+     * "方法名同样携带语义（`setIdCard(...)` 的参数本就该被当作身份证看待）"——
+     * **那句话描述的正是唯一不成立的场景**：`PsiMethodCallExpression` 不是
+     * `PsiNamedElement`，所以方法实参永远取不到提示。
+     *
+     * <p>而这正是最该提醒的形态：测试与 mock 数据几乎都写成
+     * `assertEquals("1101…", …)`、`buildDto("4539…")`、`Map.of("cardNo", "4539…")`。
+     * 实测（2026-09-22）：修之前本用例的两条命中都是**空**。
+     *
+     * <p>两个值都故意不通过校验位，所以"报不报"完全取决于方法名 / 键名取没取到，
+     * 值形态那一轮对它们是沉默的。最后两行是**对照**：方法名无语义时不报，
+     * 免得把"什么实参都报"当成修好了。
+     */
+    fun testMethodArgumentAndMapKeyHintsAreUsed() {
+        val hits = findings("MethodArgHints.java")
+
+        assertEquals("方法实参与 Map 值应各命中 1 条，实际：${hits.map { coveredText(it) }}",
+            2, hits.size)
+        val covered = hits.map { coveredText(it) }.toSet()
+        assertTrue("setIdCard(...) 的实参应被命中，实际：$covered", "110101199003078532" in covered)
+        assertTrue("Map.of(\"cardNo\", ...) 的值应被命中，实际：$covered", "4539578763621480" in covered)
+    }
+
     /** 一条告警实际覆盖的原文——用它来核对区间，比行号精确 */
     private fun coveredText(info: HighlightInfo): String =
         myFixture.file.text.substring(info.startOffset, info.endOffset)
