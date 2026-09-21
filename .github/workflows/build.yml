@@ -200,6 +200,21 @@ jobs:
           RELEASE_NOTE="./build/tmp/release_note.txt"
           ./gradlew getChangelog --unreleased --no-header --quiet --console=plain --output-file=$RELEASE_NOTE
 
+          # 这个版本已经**正式发布**过，就不再建草稿。
+          #
+          # 不判断的话，Releases 页面上会同时挂着「0.4.5（草稿）」与「0.4.5（已发布）」
+          # ——实测 2026-09-21 就是这样：`project.version` 停在已发布的 0.4.5，
+          # 于是 master 上**每一次 push 都重建一个同名草稿**。
+          # 这不只影响观感：人分不清该发哪一个，而下一个版本 bump 之后，
+          # 那条草稿又会被 `Remove Old Release Drafts` 悄悄删掉。
+          #
+          # 上一步已经删掉所有草稿，所以这里 `gh release view` 若还能查到，
+          # 查到的就是**已发布**的那条。
+          if [ "$(gh release view "$VERSION" --json isDraft --jq '.isDraft' 2>/dev/null)" = "false" ]; then
+            echo "::notice::$VERSION 已经是正式发布的 Release，本次不建草稿。"
+            exit 0
+          fi
+
           gh release create $VERSION \
             --draft \
             --title $VERSION \

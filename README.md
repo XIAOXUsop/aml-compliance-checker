@@ -94,33 +94,32 @@ String card = "4539********1486";
 
 1. 在 [Releases 页面](https://github.com/XIAOXUsop/aml-compliance-checker/releases/latest)下载最新的
    `aml-compliance-checker-<版本>.zip`
-   （**从下一个版本起**文件名才真正与 tag 一致；当前最新版不是，见下面的 ⚠️。
+   （**v0.4.5 起，压缩包名、包内 jar 名与插件里的版本号三者都等于 tag**；
    这里不写死版本号，免得每次发版都要回来改，改晚了就是一个 404 的下载链接）
 2. IDEA 中 `Settings → Plugins → ⚙ → Install Plugin from Disk`，选择该 zip
 3. 重启 IDE
 
-> ⚠️ **当前最新版（v0.4.4）的产物名与 tag 对不上，插件里的版本号也不对。**
-> 2026-09-19 从 Release 下载核对，v0.4.4 的 asset 展开是这样的：
+> **当前最新版是 v0.4.5。** 它的三个版本位置都是 `0.4.5`——2026-09-21 从 Release
+> 下载公开产物逐层核对过：
 >
 > ```
-> aml-compliance-checker-0.4.1.zip
-> └── aml-compliance-checker/lib/aml-compliance-checker-0.4.1.jar
->     └── META-INF/plugin.xml →  <version>0.4.1</version>
+> aml-compliance-checker-0.4.5.zip                        （32448 字节）
+> └── aml-compliance-checker/lib/aml-compliance-checker-0.4.5.jar
+>     └── META-INF/plugin.xml →  <version>0.4.5</version>
 > ```
 >
-> **代码是 v0.4.4 的**（发布工作流按 tag 检出源码），只是版本号没跟 tag 走：
-> `buildPlugin` 当时没传 `-Pversion`，`project.version` 取的是 `gradle.properties`
-> 里那个从 0.4.1 起就没再动过的值。于是 v0.4.2 / v0.4.3 / v0.4.4 三版的产物
-> **全叫 `...-0.4.1.zip`，而字节数各不相同**（v0.4.1 是 31574、
-> v0.4.2 是 31562、v0.4.3 与 v0.4.4 都是 31680）——它们是四次不同的构建，
-> 却顶着同一个名字。也就是说，下载到一个 `0.4.1.zip` 你**无法从名字判断它是哪一版**，
-> 而装在 IDEA 里看到的 0.4.1 也不是它的真实版本。
+> 发布流程现在会在上传前把这三处**逐个**与 tag 比一遍，不一致就拒绝上传
+> （它们由三条不同的代码路径写出，没有理由假定以后也一起对）。
+> 所以**从 v0.4.5 起，插件列表里显示的版本号就是 tag**。
 >
-> 修复已在 master，**从下一个版本起**产物名与插件 `<version>` 才真正等于 tag
-> （实测：`-Pversion=9.9.9` → `aml-compliance-checker-9.9.9.zip`，包内 jar 同名）。
-> 在那之前，**以 tag 为准，不要以插件列表里的版本号为准**；
-> 要确认手里那个包是哪一版，只能看它是从哪个 Release 下载的。
-> 详细记录见 `CHANGELOG.md` 的 `[Unreleased]` 段。
+> 顺带把"下载到的包是不是从这份源码构建的"也回答了：把公开的 jar 与**从当前源码
+> 重新构建**的 jar 逐条目比对——25 个条目的名字、内容与时间戳**全部相同**，
+> 只有 `META-INF/MANIFEST.MF` 里两行环境信息不同（CI 是 `Azul 21.0.12 / Linux`，
+> 本机是 `Corretto 21.0.10 / Windows`）。tag `0.4.5` 到 master 之间只有一个
+> 只改 CI 配置的提交，没有任何源码改动。
+>
+> **v0.4.4 及更早的版本不建议使用**——原因见下面的[历史发布问题](#历史发布问题)。
+> 那几个 Release 一律**不删除、不覆盖**，只是它们的产物认不出自己是哪一版。
 
 **方式二：从源码构建**
 
@@ -163,6 +162,60 @@ String card = "4539********1486";
 - fixture 测试用 `LightJavaCodeInsightFixtureTestCase`，需要 `TestFrameworkType.Plugin.Java`
   与 `bundledPlugin("com.intellij.java")`；JUnit 3 形态的基类在 `useJUnitPlatform()` 下
   还需要 `junit-vintage-engine`，三者缺一测试都不会被发现（不是失败，是**不执行**）
+
+## 历史发布问题
+
+> 这一节记录的是**已经修复**的问题，留着它是因为"发布流程怎么会错成这样"比"错了"更值得记。
+> **当前版本（v0.4.5 及以后）不受影响**；下面那几个 Release 一律**不删除、不覆盖**。
+
+### v0.4.1 – v0.4.4：产物认不出自己是哪一版
+
+2026-09-19 从 Release 下载核对，v0.4.4 的 asset 展开是这样的：
+
+```
+aml-compliance-checker-0.4.1.zip
+└── aml-compliance-checker/lib/aml-compliance-checker-0.4.1.jar
+    └── META-INF/plugin.xml →  <version>0.4.1</version>
+```
+
+**代码是 v0.4.4 的**（发布工作流按 tag 检出源码），只是版本号没跟 tag 走：
+`buildPlugin` 当时没传 `-Pversion`，`project.version` 取的是 `gradle.properties`
+里那个从 0.4.1 起就没再动过的值。于是三版的产物**全叫 `...-0.4.1.zip`，
+而字节数各不相同**：
+
+| 版本 | Release 里的 asset 名 | 字节数 |
+|---|---|---|
+| v0.4.1 | `aml-compliance-checker-0.4.1.zip` | 31574 |
+| v0.4.2 | `aml-compliance-checker-0.4.1.zip` | 31562 |
+| v0.4.3 | `aml-compliance-checker-0.4.1.zip` | 31680 |
+| v0.4.4 | `aml-compliance-checker-0.4.1.zip` | 31680 |
+
+它们是**四次不同的构建，却顶着同一个名字**。下载到一个 `0.4.1.zip`，你无法从名字
+判断它是哪一版；而装在 IDEA 里看到的 0.4.1，也不是它的真实版本。
+
+### 怎么修的（v0.4.5）
+
+- 发布流程传 `-Pversion="${TAG#v}"`，让它**同时**驱动产物名与 `plugin.xml` 的 `<version>`
+  （实测：`-Pversion=9.9.9` → `aml-compliance-checker-9.9.9.zip`，包内 jar 同名）；
+- `gradle.properties` 里的 `version` 也从 0.4.1 更到 0.4.5——发布走 `-Pversion`，
+  但**本地构建**用的仍是这个值，停在 0.4.1 会让本地产物继续叫错名字；
+- `patchChangelog` 有**同一个根因**：它按 `project.version` 决定往 CHANGELOG 写哪个版本段，
+  不传就取那个从没动过的值——任务以 0 退出、日志 `BUILD SUCCESSFUL`，而文件一个字节没变。
+  所以**本仓库 CHANGELOG 里 0.4.2 起的段落都是事后按各版本 Release 说明补录的**，
+  不是发布流程写的；
+- 上传前把 zip 名 / 包内 jar 名 / `plugin.xml <version>` **逐个**与 tag 比一遍，
+  不一致就拒绝上传。三处都查不是啰嗦：它们是三条不同的代码路径写的，
+  那次同时错只能说明共用一个来源，**没道理假定以后也一起对**。
+
+### 顺带修掉的另一个问题：断言验错了对象
+
+发版断言原先写的是 `ls build/distributions/*.zip | head -1`。只有一个 zip 时（CI 里就是）
+这是对的，但本地目录攒着历史产物时，它会按字典序挑中**最快的那一个**：
+2026-09-20 在本机试，目录里同时有 0.4.1、0.4.5、9.9.9 三个 zip，`head -1` 拿到的是
+**0.4.1**，断言于是在验一个**根本不是这次构建**的文件。
+
+现在多于一个就直接失败并列出全部，让人先清目录——**验错对象比验出错更危险：
+后者会红，前者会绿。**
 
 ## License
 

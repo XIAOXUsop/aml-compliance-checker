@@ -147,9 +147,19 @@ v0.4.4 的 Release **不删除、不覆盖**，只在说明里指向本版本。
 - 首个版本：在 Java 注释中检测 18 位身份证号与 11 位手机号
 - 报警文案仅显示掩码预览，不回显完整敏感数据
 
-[Unreleased]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.4.1...HEAD
-[0.4.1]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.4.0...0.4.1
-[0.4.0]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.3.0...0.4.0
-[0.3.0]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.2.0...0.3.0
-[0.2.0]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.1.0...0.2.0
-[0.1.0]: https://github.com/XIAOXUsop/aml-compliance-checker/commits/0.1.0
+<!--
+  ⚠️ tag 前缀在这条线上**并不统一**：v0.4.0 – v0.4.4 带 `v`，而 `0.4.5` 没有。
+  链接必须写**真实存在的 tag 名**。下面这几条原先是 `0.x.y`（不带 `v`）的写法，
+  2026-09-21 逐条查过——**除最后两条外全部返回 404**。
+
+  0.1.0 / 0.2.0 则连 tag 都没有（当年没发过 Release），它们是开发期里程碑，
+  所以**不给链接**：指向一个不存在的 tag 比没有链接更糟，它看起来是能点的。
+-->
+[Unreleased]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/0.4.5...HEAD
+[0.4.5]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/v0.4.4...0.4.5
+[0.4.4]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/v0.4.3...v0.4.4
+[0.4.3]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/v0.4.2...v0.4.3
+[0.4.2]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/v0.4.1...v0.4.2
+[0.4.1]: https://github.com/XIAOXUsop/aml-compliance-checker/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/XIAOXUsop/aml-compliance-checker/commits/v0.4.0
+[0.3.0]: https://github.com/XIAOXUsop/aml-compliance-checker/commits/v0.3.0
