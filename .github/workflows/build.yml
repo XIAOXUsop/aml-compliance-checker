@@ -36,6 +36,8 @@ jobs:
       # Check out the current repository
       - name: Fetch Sources
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       # Set up the Java environment for the next steps
       - name: Setup Java
@@ -51,6 +53,14 @@ jobs:
       # Build plugin
       - name: Build plugin
         run: ./gradlew buildPlugin
+
+      - name: Check packaged plugin metadata and source
+        run: |
+          VERSION=$(sed -n 's/^version = //p' gradle.properties)
+          python3 -m unittest discover -s scripts -p 'test_*.py' -q
+          python3 scripts/check_release_zip.py \
+            --zip "build/distributions/aml-compliance-checker-$VERSION.zip" \
+            --version "$VERSION"
 
       # Store an already-built plugin as an artifact for downloading
       - name: Upload artifact

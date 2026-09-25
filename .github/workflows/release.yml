@@ -35,6 +35,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
 
       # Set up the Java environment for the next steps
       - name: Setup Java
@@ -134,6 +135,15 @@ jobs:
           fi
           echo "zip 名 / jar 名 / plugin.xml 三处都等于 $want"
 
+      - name: Check release source and ZIP compatibility
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERSION="${TAG#v}"
+          python3 scripts/check_release_zip.py \
+            --zip "build/distributions/aml-compliance-checker-$VERSION.zip" \
+            --version "$VERSION"
+
       # Upload the plugin ZIP as a release asset
       #
       # `--clobber` 是必需的，不是保险：这个工作流在每次 release 事件上重跑，
@@ -149,6 +159,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload --clobber ${{ github.event.release.tag_name }} ./build/distributions/*
+
+      - name: Download and compare published ZIP
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERSION="${TAG#v}"
+          mkdir -p build/release-download
+          gh release download "$TAG" --pattern "aml-compliance-checker-$VERSION.zip" --dir build/release-download
+          cmp "build/distributions/aml-compliance-checker-$VERSION.zip" \
+            "build/release-download/aml-compliance-checker-$VERSION.zip"
+          python3 scripts/check_release_zip.py \
+            --zip "build/release-download/aml-compliance-checker-$VERSION.zip" \
+            --version "$VERSION"
 
       # Update the Unreleased section with the current release note
       #
