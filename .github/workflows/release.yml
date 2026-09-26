@@ -1,6 +1,6 @@
 # 发布流程：把插件 ZIP 挂到 GitHub Release 上。
 #
-# 触发方式：在 GitHub 上把 Build 工作流创建的 draft release 正式发布。
+# 触发方式：发布 Build 工作流创建的 draft release；或手动重跑现有 release tag。
 #
 # **本工作流不发布到 JetBrains Marketplace。**
 # publishPlugin 需要 PUBLISH_TOKEN、CERTIFICATE_CHAIN、PRIVATE_KEY、PRIVATE_KEY_PASSWORD
@@ -11,7 +11,14 @@ name: Release
 
 on:
   release:
-    types: [ prereleased, released ]
+    # published 覆盖从草稿发布正式版与预发行版；prereleased 对草稿预发行版不会触发。
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 已发布的版本 tag（如 0.4.6）
+        required: true
+        type: string
 
 jobs:
 
@@ -22,6 +29,19 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+
+      - name: Check release tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "::error::版本 tag 格式无效：$TAG"; exit 1; }
+          draft=$(gh release view "$TAG" --json isDraft --jq '.isDraft')
+          [ "$draft" = false ] || {
+            echo "::error::Release $TAG 仍是草稿，先正式发布"; exit 1; }
 
       # Free GitHub Actions Environment Disk Space
       - name: Maximize Build Space
@@ -34,7 +54,7 @@ jobs:
       - name: Fetch Sources
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
           fetch-depth: 0
 
       # Set up the Java environment for the next steps
@@ -62,7 +82,7 @@ jobs:
       # 所以这里以 tag 为准，开发者本地构建仍用 gradle.properties 的值。
       - name: Build plugin
         env:
-          TAG: ${{ github.event.release.tag_name }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: ./gradlew buildPlugin -Pversion="${TAG#v}"
 
       - name: Show the artifact that will be uploaded
@@ -80,7 +100,7 @@ jobs:
       # v0.4.4 那次三者**同时**错了，说明它们共用一个来源——但没道理假定以后也一起对。
       - name: 断言产物里的版本号等于 tag
         env:
-          TAG: ${{ github.event.release.tag_name }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
           set -euo pipefail
           want="${TAG#v}"
@@ -137,7 +157,7 @@ jobs:
 
       - name: Check release source and ZIP compatibility
         env:
-          TAG: ${{ github.event.release.tag_name }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
           VERSION="${TAG#v}"
           python3 scripts/check_release_zip.py \
@@ -158,12 +178,13 @@ jobs:
       - name: Upload Release Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload --clobber ${{ github.event.release.tag_name }} ./build/distributions/*
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: gh release upload --clobber "$TAG" ./build/distributions/*
 
       - name: Download and compare published ZIP
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.event.release.tag_name }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
           VERSION="${TAG#v}"
           mkdir -p build/release-download
@@ -197,10 +218,10 @@ jobs:
       # 也就是说**手写在 [Unreleased] 下的条目不会因发布而进 CHANGELOG**，
       # 本仓库的发布说明以 GitHub Release 正文为准。
       - name: Patch Changelog
-        if: ${{ github.event.release.body != '' }}
+        if: ${{ github.event_name == 'release' && github.event.release.body != '' }}
         env:
           CHANGELOG: ${{ github.event.release.body }}
-          TAG: ${{ github.event.release.tag_name }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
           RELEASE_NOTE="./build/tmp/release_note.txt"
           mkdir -p "$(dirname "$RELEASE_NOTE")"
@@ -222,11 +243,12 @@ jobs:
       # 要让它真正自动建 PR：仓库 Settings → Actions → General → Workflow permissions
       # 勾上那一项，再把下面的 `|| echo` 去掉。
       - name: Create Pull Request
-        if: ${{ github.event.release.body != '' }}
+        if: ${{ github.event_name == 'release' && github.event.release.body != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="$TAG"
           BRANCH="changelog-update-$VERSION"
           LABEL="release changelog"
 
